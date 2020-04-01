@@ -4,11 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@next/bundle-analyzer": "^9.1.6",
+    "@next/bundle-analyzer": "^9.3.4",
     "csrf": "^3.1.0",
     "formik": "^2.0.8",
-    "next": "^9.3.0",
-    "nookies": "^2.0.8",
+    "next": "^9.3.4",
+    "nookies": "^2.2.2",
     "react": "^16.12.0",
     "react-dom": "^16.12.0"
   },
