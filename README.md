@@ -12,6 +12,6 @@ with the optimization next will report 72.1 kB first load for the login page vs 
 
 
 
-The only problem is handling client side navigation when initially coming from a page that doesn't use csf. Since the page is rendered client side, there is no csrf cookie nor token, so the validation fails.
+The only problem is handling client side navigation when initially coming from a page that doesn't use csrf. Since the page is rendered client side, there is no csrf cookie nor token, so the validation fails.
 
 To fix this, if page is rendered client side, it does an api call to fetch a csrf token, which also includes the secret cookie.
