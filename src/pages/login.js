@@ -9,6 +9,12 @@ const Login = ({ csrfToken, validLogin }) => {
         return <div>logged in!</div>
     }
 
+    const deleteCookie = () => {
+        fetch('/api/csrf', {
+            method: 'DELETE',
+        })
+    }
+
     return (
         <Fragment>
             <Formik
@@ -21,7 +27,7 @@ const Login = ({ csrfToken, validLogin }) => {
                         body: JSON.stringify(values),
                         headers: {
                             'Content-Type': 'application/json',
-                            'csrf-token': csrfToken
+                            'csrf-token': csrfToken // send csrf token as a header, could be added as a hidden post param instead.
                         }
                     })
                     try {
@@ -50,7 +56,8 @@ const Login = ({ csrfToken, validLogin }) => {
                 )}
             </Formik>
             <div>valid credential: {validLogin}</div>
-        </Fragment>
+            <div><a href="#" onClick={() => deleteCookie()}>delete csrf cookie</a></div>
+        </Fragment >
     )
 }
 

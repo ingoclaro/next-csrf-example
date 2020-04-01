@@ -1,24 +1,47 @@
-// import { Fragment } from 'react'
-// import Head from 'next/head'
 
-const csrf = (ctx) => {
+// DON'T DO THIS HERE:
+// const Tokens = require('csrf')
+// const { parseCookies, setCookie } = require('nookies')
+// it would add them to the client side code!!
+// these are required further below so that they are only added to the server bundle.
+
+const csrf = async (ctx) => {
     let csrfToken
+    let isValidCSRFToken
+
     if (!ctx.req && typeof document !== 'undefined') {
         // browser side
-        // this can be used if token is saved in the html
-        // const meta = document.querySelector('meta[name="csrf-token"]')
-        // csrfToken = (meta && meta.getAttribute('content')) || ''
-        // return { csrfToken, isValidCSRFToken: false }
-        return { csrfToken: '', isValidCSRFToken: false }
-    }
 
-    if (process.browser === false) { //don't load the stuff below browser side, in particular the required modules. Code will be eliminated by webpack
-        if (!ctx.req) {
-            // static nextjs export html page
-            return { csrfToken: '', isValidCSRFToken: false }
+        // make api call to fetch csrf token
+        const response = await fetch('/api/csrf')
+        try {
+            const content = await response.json()
+            if (!response.ok) {
+                console.error(response)
+            } else {
+                csrfToken = content.csrf
+            }
+        }
+        catch (e) {
+            console.error(e)
         }
 
-        // server side
+        return { csrfToken, isValidCSRFToken }
+    }
+
+    // Code will be eliminated by webpack for browser build
+    if (process.browser === false) {
+        // server side    
+
+        if (!ctx.req) {
+            // static nextjs export html page
+            return { csrfToken, isValidCSRFToken }
+        }
+
+        // when called without cookies, this will generate a new csrf secret, this is the behaviour when loading the page for the first time
+        // when called with the _csrf cookie, it will use that as a secret and create a new token
+        // it will validate the csrf token present as a body param, query param or a header agains the cookie that holds the private key
+
         const Tokens = require('csrf')
         const { parseCookies, setCookie } = require('nookies')
 
@@ -28,7 +51,14 @@ const csrf = (ctx) => {
         // check if secret comes in cookies, use that one
         if (cookies['_csrf']) {
             secret = cookies['_csrf']
+
+            // validate incoming token in request
+            const incomingToken = (ctx.req.body && ctx.req.body._csrf) ||
+                (ctx.req.query && ctx.req.query._csrf) ||
+                (ctx.req.headers['csrf-token'])
+            isValidCSRFToken = !!tokens.verify(secret, incomingToken)
         } else {
+            // new secret is created and returned in cookie
             secret = tokens.secretSync()
             setCookie(ctx, '_csrf', secret, {
                 path: '/',
@@ -37,16 +67,7 @@ const csrf = (ctx) => {
             })
         }
 
-        // validate incoming token
-        let isValidCSRFToken = false
-        if (ctx.req) {
-            const incomingToken = (ctx.req.body && ctx.req.body._csrf) ||
-                (ctx.req.query && ctx.req.query._csrf) ||
-                (ctx.req.headers['csrf-token'])
-            isValidCSRFToken = !!tokens.verify(secret, incomingToken)
-        }
-
-        // generate outgoing token
+        // generate new outgoing token for client to use as request parameter
         csrfToken = tokens.create(secret)
 
         return { csrfToken, isValidCSRFToken }
@@ -60,13 +81,14 @@ export const withCSRF = Component => {
         )
     }
     wrapper.getInitialProps = async ctx => {
-        const csrfProps = csrf(ctx)
+        const csrfProps = await csrf(ctx)
         let componentProps = {}
         if (Component.getInitialProps) {
             componentProps = await Component.getInitialProps(ctx)
         }
         return { ...componentProps, ...csrfProps }
     }
+
     return wrapper
 }
 

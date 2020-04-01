@@ -2,11 +2,13 @@ import Link from 'next/link'
 
 const App = () => {
     return <div>
-        This doesn' work because it does client side rendering: <Link href="/login">
-            <a>login</a>
-        </Link> <br />
-
-        you need a regular link: <a href="/login">login</a>
+        <div>
+            <Link href="/login">
+                <a>login using Link component (client side rendering)</a>
+            </Link>
+            <br />
+            <a href="/login">login as regular link (server side rendering)</a>
+        </div>
     </div>
 }
 
